@@ -2,12 +2,12 @@
 
 #pragma once
 
-#include "GenericOctree.h"
+#include "Math/GenericOctree.h"
 
 #include "GameFramework/Actor.h"
 #include "SpacePartioner.generated.h"
 
-USTRUCT()
+USTRUCT(BlueprintType, Blueprintable)
 struct FOctreeElement
 {
 	GENERATED_USTRUCT_BODY()

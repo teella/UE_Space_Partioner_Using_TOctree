@@ -1,8 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "SPUsingTOctree.h"
 #include "SpacePartioner.h"
-#include "DrawDebugHelpers.h"
+#include "SPUsingTOctree.h"
+//#include "DrawDebugHelpers.h"
+#include "Engine/Public/DrawDebugHelpers.h"
 
 // Sets default values
 ASpacePartioner::ASpacePartioner(const FObjectInitializer& ObjectInitializer)

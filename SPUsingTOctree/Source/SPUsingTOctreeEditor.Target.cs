@@ -5,21 +5,10 @@ using System.Collections.Generic;
 
 public class SPUsingTOctreeEditorTarget : TargetRules
 {
-	public SPUsingTOctreeEditorTarget(TargetInfo Target)
+	public SPUsingTOctreeEditorTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
-	}
-
-	//
-	// TargetRules interface.
-	//
-
-	public override void SetupBinaries(
-		TargetInfo Target,
-		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
-		ref List<string> OutExtraModuleNames
-		)
-	{
-		OutExtraModuleNames.AddRange( new string[] { "SPUsingTOctree" } );
+		DefaultBuildSettings = BuildSettingsVersion.V2;
+		ExtraModuleNames.AddRange( new string[] { "SPUsingTOctree" } );
 	}
 }
