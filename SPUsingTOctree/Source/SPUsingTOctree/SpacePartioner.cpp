@@ -52,121 +52,111 @@ void ASpacePartioner::Tick( float DeltaTime )
 
 	if (bInitialized && bDrawDebugInfo)
 	{
-
 		int level = 0;
-		float max;
-		float offsetMax;
-		float offset;
-		FVector maxExtent;
-		FVector center;
-		FVector tempForCoercion;
+		float max = 0;
+		float offsetMax = 0;
+		float offset = 0;
+		FVector maxExtent = FVector(0, 0, 0);
+		FVector center = FVector(0, 0, 0);
+		FVector tempForCoercion = FVector(0, 0, 0);;
 		FBoxCenterAndExtent OldBounds = FBoxCenterAndExtent();
 
-		int nodeCount = 0;
+		//int nodeCount = 0;
 		int elementCount = 0;
-
-		// Go through the nodes of the octree
-		for (FSimpleOctree::TConstIterator<> NodeIt(*OctreeData); NodeIt.HasPendingNodes(); NodeIt.Advance())
-		{
-			const FSimpleOctree::FNode& CurrentNode = NodeIt.GetCurrentNode();
-			const FOctreeNodeContext& CurrentContext = NodeIt.GetCurrentContext();
-			const FBoxCenterAndExtent& CurrentBounds = CurrentContext.Bounds;
-
-			nodeCount++;
-
-			FOREACH_OCTREE_CHILD_NODE(ChildRef)
+		
+		
+		OctreeData->FindNodesWithPredicate(
+			[this](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex /*NodeIndex*/, const FBoxCenterAndExtent& /*NodeBounds*/)
 			{
-				if (CurrentNode.HasChild(ChildRef))
+				return true;
+			},
+			[this, &tempForCoercion, &max, &center, &OldBounds, &level, &offsetMax, &offset, &maxExtent, &elementCount](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& NodeBounds)
+			{
+				// If the extents have changed then we have moved a level.
+				if (!OldBounds.Extent.Equals(NodeBounds.Extent))
 				{
-					NodeIt.PushChild(ChildRef);
+					level++;
 				}
-			}
-
-			// If the extents have changed then we have moved a level.
-			if (!OldBounds.Extent.Equals(CurrentBounds.Extent))
-			{
-				level++;
-			}
-			OldBounds = CurrentBounds;
-
-			// UE_LOG(LogTemp, Log, TEXT("Level: %d"), level);
-
-			// Draw Node Bounds
-			tempForCoercion = CurrentBounds.Extent;
-			max = tempForCoercion.GetMax();
-			center = CurrentBounds.Center;
-
-			// UE_LOG(LogTemp, Log, TEXT("center before: %s"), *center.ToString());
-			
-			// To understand the math here check out the constructors in FOctreeNodeContext
-			// Offset nodes that are not the root bounds
-			if (!OctreeData->GetRootBounds().Extent.Equals(CurrentBounds.Extent))
-			{
-				for (int i = 1; i < level; i++)
-				{
-					// Calculate offset
-					offsetMax = max / (1.0f + (1.0f / FOctreeNodeContext::LoosenessDenominator));
-					offset = max - offsetMax;
-					max = offsetMax;
+				OldBounds = NodeBounds;
 				
-					// Calculate Center Offset
-					if (center.X > 0)
-					{
-						center.X = center.X + offset;
-					}
-					else
-					{
-						center.X = center.X - offset;
-					}
+				//UE_LOG(LogTemp, Log, TEXT("Level: %d"), level);
+				
+				// Draw Node Bounds
+				tempForCoercion = NodeBounds.Extent;
+				max = tempForCoercion.GetMax();
+				center = NodeBounds.Center;
 
-					if (center.Y > 0)
-					{
-						center.Y = center.Y + offset;
-					}
-					else
-					{
-						center.Y = center.Y - offset;
-					}
+				//UE_LOG(LogTemp, Log, TEXT("center before: %s"), *center.ToString());
 
-					if (center.Z > 0)
+				// To understand the math here check out the constructors in FOctreeNodeContext
+				// Offset nodes that are not the root bounds
+				if (!OctreeData->GetRootBounds().Extent.Equals(NodeBounds.Extent))
+				{
+					for (int i = 1; i < level; i++)
 					{
-						center.Z = center.Z + offset;
-					}
-					else
-					{
-						center.Z = center.Z - offset;
+						// Calculate offset
+						offsetMax = max / (1.0f + (1.0f / FOctreeNodeContext::LoosenessDenominator));
+						offset = max - offsetMax;
+						max = offsetMax;
+
+						// Calculate Center Offset
+						if (center.X > 0)
+						{
+							center.X = center.X + offset;
+						}
+						else
+						{
+							center.X = center.X - offset;
+						}
+
+						if (center.Y > 0)
+						{
+							center.Y = center.Y + offset;
+						}
+						else
+						{
+							center.Y = center.Y - offset;
+						}
+
+						if (center.Z > 0)
+						{
+							center.Z = center.Z + offset;
+						}
+						else
+						{
+							center.Z = center.Z - offset;
+						}
 					}
 				}
-			}
 
-			UE_LOG(LogTemp, Log, TEXT("max: %f"), max);
-			// UE_LOG(LogTemp, Log, TEXT("center of nodes: %s"), *center.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("max: %f"), max);
+				//UE_LOG(LogTemp, Log, TEXT("center of nodes: %s"), *center.ToString());
 
-			maxExtent = FVector(max, max, max);
-			
-
-			// UE_LOG(LogTemp, Log, TEXT("Extent of nodes: %s"), *tempForCoercion.ToString());
-
-			DrawDebugBox(GetWorld(), center, maxExtent, FColor().Blue, false, 0.0f);
-			DrawDebugSphere(GetWorld(), center + maxExtent, 4.0f, 12, FColor().Green, false, 0.0f);
-			DrawDebugSphere(GetWorld(), center - maxExtent, 4.0f, 12, FColor().Red, false, 0.0f);
-
-			for (FSimpleOctree::ElementConstIt ElementIt(CurrentNode.GetElementIt()); ElementIt; ++ElementIt)
-			{
-				const FOctreeElement& Sample = *ElementIt;
-
-				// Draw debug boxes around elements
-				max = Sample.BoxSphereBounds.BoxExtent.GetMax();
 				maxExtent = FVector(max, max, max);
-				center = Sample.MyActor->GetActorLocation();
+
+				//UE_LOG(LogTemp, Log, TEXT("Extent of nodes: %s"), *tempForCoercion.ToString());
 
 				DrawDebugBox(GetWorld(), center, maxExtent, FColor().Blue, false, 0.0f);
-				DrawDebugSphere(GetWorld(), center + maxExtent, 4.0f, 12, FColor().White, false, 0.0f);
-				DrawDebugSphere(GetWorld(), center - maxExtent, 4.0f, 12, FColor().White, false, 0.0f);
-				elementCount++;
-			}
-		}
-		// UE_LOG(LogTemp, Log, TEXT("Node Count: %d, Element Count: %d"), nodeCount, elementCount);
+				DrawDebugSphere(GetWorld(), center + maxExtent, 4.0f, 12, FColor().Green, false, 0.0f);
+				DrawDebugSphere(GetWorld(), center - maxExtent, 4.0f, 12, FColor().Red, false, 0.0f);
+
+				TArrayView<const FOctreeElement> elements = OctreeData->GetElementsForNode(NodeIndex);
+
+				for(int i = 0; i < elements.Num(); i++)
+				{
+					// Draw debug boxes around elements
+					max = elements[i].BoxSphereBounds.BoxExtent.GetMax();
+					maxExtent = FVector(max, max, max);
+					center = elements[i].MyActor->GetActorLocation();
+
+					DrawDebugBox(GetWorld(), center, maxExtent, FColor().Blue, false, 0.0f);
+					DrawDebugSphere(GetWorld(), center + maxExtent, 4.0f, 12, FColor().White, false, 0.0f);
+					DrawDebugSphere(GetWorld(), center - maxExtent, 4.0f, 12, FColor().White, false, 0.0f);
+					elementCount++;
+				}
+			});
+
+		//UE_LOG(LogTemp, Log, TEXT("Node Count: %d, Element Count: %d"), nodeCount, elementCount);
 	}
 
 	
@@ -188,17 +178,13 @@ TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphere
 TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxCenterAndExtent& inBoundingBoxQuery)
 {
 	// Iterating over a region in the octree and storing the elements
-	int count = 0;
 	TArray<FOctreeElement> octreeElements;
 
-	for (FSimpleOctree::TConstElementBoxIterator<> OctreeIt(*OctreeData, inBoundingBoxQuery);
-		OctreeIt.HasPendingElements();
-		OctreeIt.Advance())
-	{
-		octreeElements.Add(OctreeIt.GetCurrentElement());
-		count++;
-	}
-	// UE_LOG(LogTemp, Log, TEXT("%d elements in %s"), count, *boundingBoxQuery.Extent.ToString());
+	OctreeData->FindAllElements([&octreeElements](const FOctreeElement& octElement)
+		{
+			octreeElements.Add(octElement);
+		});
+	UE_LOG(LogTemp, Log, TEXT("octreeElements: %d"), octreeElements.Num());
 
 	return octreeElements;
 }

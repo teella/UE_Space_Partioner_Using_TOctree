@@ -51,7 +51,7 @@ struct FOctreeSematics
 		return A.MyActor == B.MyActor;
 	}
 	
-	FORCEINLINE static void SetElementId(const FOctreeElement& Element, FOctreeElementId Id)
+	FORCEINLINE static void SetElementId(const FOctreeElement& Element, FOctreeElementId2 Id)
 	{
 	}
 
@@ -64,7 +64,7 @@ struct FOctreeSematics
 
 };
 
-typedef TOctree<FOctreeElement, FOctreeSematics> FSimpleOctree;
+typedef TOctree2<FOctreeElement, FOctreeSematics> FSimpleOctree;
 
 UCLASS()
 class SPUSINGTOCTREE_API ASpacePartioner : public AActor
