@@ -61,7 +61,7 @@ void ASpacePartioner::Tick( float DeltaTime )
 		FVector tempForCoercion = FVector(0, 0, 0);;
 		FBoxCenterAndExtent OldBounds = FBoxCenterAndExtent();
 
-		//int nodeCount = 0;
+		int nodeCount = 0;
 		int elementCount = 0;
 		
 		
@@ -70,8 +70,10 @@ void ASpacePartioner::Tick( float DeltaTime )
 			{
 				return true;
 			},
-			[this, &tempForCoercion, &max, &center, &OldBounds, &level, &offsetMax, &offset, &maxExtent, &elementCount](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& NodeBounds)
+			[this, &tempForCoercion, &max, &center, &OldBounds, &level, &offsetMax, &offset, &maxExtent, &elementCount, &nodeCount](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& NodeBounds)
 			{
+				nodeCount++;
+
 				// If the extents have changed then we have moved a level.
 				if (!OldBounds.Extent.Equals(NodeBounds.Extent))
 				{
