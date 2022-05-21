@@ -13,14 +13,13 @@ struct FOctreeElement
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Octree Element Struct")
-	AActor* MyActor;
+	TObjectPtr<AActor> MyActor = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Octree Element Struct")
 	FBoxSphereBounds BoxSphereBounds;
 
 	FOctreeElement()
 	{
-		MyActor = nullptr;
 		BoxSphereBounds = FBoxSphereBounds(FVector(0.0f, 0.0f, 0.0f), FVector(1.0f, 1.0f, 1.0f), 1.0f);
 	}
 };
@@ -66,7 +65,7 @@ struct FOctreeSematics
 
 typedef TOctree2<FOctreeElement, FOctreeSematics> FSimpleOctree;
 
-UCLASS()
+UCLASS(ClassGroup = (SpacePartioner), BlueprintType, Blueprintable)
 class SPUSINGTOCTREE_API ASpacePartioner : public AActor
 {
 	GENERATED_BODY()
@@ -120,13 +119,13 @@ public:
 
 	/** Draws Debug information at runtime */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Debug)
-	bool bDrawDebugInfo = false;
+	bool bDrawDebugInfo;
 
 private:
 
 	void DrawOctreeBounds();
 
-	FSimpleOctree* OctreeData;
+	TObjectPtr<FSimpleOctree> OctreeData = nullptr;
 	bool bInitialized;
 	
 };

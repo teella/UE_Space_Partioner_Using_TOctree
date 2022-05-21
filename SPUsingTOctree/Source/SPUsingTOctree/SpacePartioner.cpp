@@ -8,10 +8,12 @@
 // Sets default values
 ASpacePartioner::ASpacePartioner(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, OctreeData(NULL)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	bDrawDebugInfo = false;
+	bInitialized = false;
 
 	OctreeData = new FSimpleOctree(FVector(0.0f, 0.0f, 0.0f), 100.0f); // const FVector & InOrigin, float InExtent
 }
@@ -63,7 +65,6 @@ void ASpacePartioner::Tick( float DeltaTime )
 
 		int nodeCount = 0;
 		int elementCount = 0;
-		
 		
 		OctreeData->FindNodesWithPredicate(
 			[this](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex /*NodeIndex*/, const FBoxCenterAndExtent& /*NodeBounds*/)
