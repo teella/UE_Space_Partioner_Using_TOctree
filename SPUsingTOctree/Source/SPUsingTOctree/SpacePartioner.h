@@ -74,6 +74,8 @@ public:
 	// Sets default values for this actor's properties
 	ASpacePartioner(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
+	UPROPERTY(Category = "Config", EditAnywhere, BlueprintReadWrite)
+	bool PrintLogs;
 	/**
 	* Used in conjunction with a constructor to initialize the object.
 	* @param NewBounds	Intial size of the Octree

@@ -12,6 +12,8 @@ ASpacePartioner::ASpacePartioner(const FObjectInitializer& ObjectInitializer)
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	PrintLogs = false;
+
 	bDrawDebugInfo = false;
 	bInitialized = false;
 
@@ -86,7 +88,7 @@ void ASpacePartioner::Tick( float DeltaTime )
 				}
 			});
 		
-		//UE_LOG(LogTemp, Log, TEXT("Node Count: %d, Element Count: %d"), nodeCount, elementCount);
+		if (PrintLogs) UE_LOG(LogTemp, Log, TEXT("Node Count: %d, Element Count: %d"), nodeCount, elementCount);
 	}
 
 	
@@ -96,7 +98,7 @@ void ASpacePartioner::AddOctreeElement(const FOctreeElement& inNewOctreeElement)
 {
 	check(bInitialized);
 	OctreeData->AddElement(inNewOctreeElement);
-	UE_LOG(LogTemp, Log, TEXT("Added element to Octree."));
+	if (PrintLogs) UE_LOG(LogTemp, Log, TEXT("Added element to Octree."));
 }
 
 TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bDrawDebug = false, const bool bPersistentLines = false, const float lifeTime = 0.0f)
@@ -116,7 +118,7 @@ TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphere
 				octreeElements.Add(octElement);
 			}
 		});
-	UE_LOG(LogTemp, Log, TEXT("octreeElements: %d"), octreeElements.Num());
+	if (PrintLogs) UE_LOG(LogTemp, Log, TEXT("octreeElements: %d"), octreeElements.Num());
 
 	return octreeElements;
 }
