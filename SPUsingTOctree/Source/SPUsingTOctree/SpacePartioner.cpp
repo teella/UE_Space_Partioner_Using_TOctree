@@ -13,6 +13,7 @@ ASpacePartioner::ASpacePartioner(const FObjectInitializer& ObjectInitializer)
 	PrimaryActorTick.bCanEverTick = true;
 
 	PrintLogs = false;
+	PrintTickLogs = false;
 
 	bDrawDebugInfo = false;
 	bInitialized = false;
@@ -88,7 +89,7 @@ void ASpacePartioner::Tick( float DeltaTime )
 				}
 			});
 		
-		if (PrintLogs) UE_LOG(LogTemp, Log, TEXT("Node Count: %d, Element Count: %d"), nodeCount, elementCount);
+		if (PrintTickLogs) UE_LOG(LogTemp, Log, TEXT("Node Count: %d, Element Count: %d"), nodeCount, elementCount);
 	}
 
 	
@@ -111,14 +112,40 @@ TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphere
 	FBox box = inBoundingBoxQuery.GetBox();
 	FSphere sphere = inBoundingBoxQuery.GetSphere();
 	
-	OctreeData->FindAllElements([&octreeElements, &box, &sphere](const FOctreeElement& octElement)
+	//--just for reference--
+	//OctreeData->FindAllElements([&octreeElements, &box, &sphere](const FOctreeElement& octElement)
+	//	{
+	//		if (box.IsInside(octElement.BoxSphereBounds.GetBox()) || sphere.IsInside(octElement.MyActor->GetActorLocation()))
+	//		{
+	//			octreeElements.Add(octElement);
+	//		}
+	//	});
+	
+	OctreeData->FindNodesWithPredicate(
+		[&box](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex /*NodeIndex*/, const FBoxCenterAndExtent& NodeBounds)
 		{
-			if (box.IsInside(octElement.BoxSphereBounds.GetBox()) || sphere.IsInside(octElement.MyActor->GetActorLocation()))
+			if (NodeBounds.GetBox().IsInside(box.GetCenter()) || NodeBounds.GetBox().Intersect(box))
 			{
-				octreeElements.Add(octElement);
+				return true;
+			}
+			return false;
+		},
+		[this, &octreeElements, &box, &sphere](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& /*NodeBounds*/)
+		{
+			TArrayView<const FOctreeElement> elements = OctreeData->GetElementsForNode(NodeIndex);
+			
+			if (PrintLogs) UE_LOG(LogTemp, Log, TEXT("GetElementsWithinBounds NodeIndex: %d"), NodeIndex);
+
+			for (int i = 0; i < elements.Num(); i++)
+			{
+				if (box.IsInside(elements[i].BoxSphereBounds.GetBox()) || sphere.IsInside(elements[i].MyActor->GetActorLocation()))
+				{
+					octreeElements.Add(elements[i]);
+				}
 			}
 		});
-	if (PrintLogs) UE_LOG(LogTemp, Log, TEXT("octreeElements: %d"), octreeElements.Num());
+
+	if (PrintLogs) UE_LOG(LogTemp, Log, TEXT("GetElementsWithinBounds octreeElements: %d"), octreeElements.Num());
 
 	return octreeElements;
 }

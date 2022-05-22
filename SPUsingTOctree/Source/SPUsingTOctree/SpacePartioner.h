@@ -76,6 +76,10 @@ public:
 
 	UPROPERTY(Category = "Config", EditAnywhere, BlueprintReadWrite)
 	bool PrintLogs;
+
+	UPROPERTY(Category = "Config", EditAnywhere, BlueprintReadWrite)
+	bool PrintTickLogs;
+
 	/**
 	* Used in conjunction with a constructor to initialize the object.
 	* @param NewBounds	Intial size of the Octree
