@@ -102,11 +102,11 @@ void ASpacePartioner::AddOctreeElement(const FOctreeElement& inNewOctreeElement)
 	if (PrintLogs) UE_LOG(LogTemp, Log, TEXT("Added element to Octree."));
 }
 
-TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bDrawDebug = false, const bool bPersistentLines = false, const float lifeTime = 0.0f)
+TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bSphereOnlyTest = false, const bool bDrawDebug = false, const bool bPersistentLines = false, const float lifeTime = 0.0f)
 {
 	if (bDrawDebug)
 	{
-		DrawBoxSphereBounds(inBoundingBoxQuery, bPersistentLines, lifeTime);
+		DrawBoxSphereBounds(inBoundingBoxQuery, bSphereOnlyTest, bPersistentLines, lifeTime);
 	}
 	TArray<FOctreeElement> octreeElements;
 	FBox box = inBoundingBoxQuery.GetBox();
@@ -130,7 +130,7 @@ TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphere
 			}
 			return false;
 		},
-		[this, &octreeElements, &box, &sphere](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& /*NodeBounds*/)
+		[this, &octreeElements, &box, &sphere, &bSphereOnlyTest](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& /*NodeBounds*/)
 		{
 			TArrayView<const FOctreeElement> elements = OctreeData->GetElementsForNode(NodeIndex);
 			
@@ -138,7 +138,11 @@ TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphere
 
 			for (int i = 0; i < elements.Num(); i++)
 			{
-				if (box.IsInside(elements[i].BoxSphereBounds.GetBox()) || sphere.IsInside(elements[i].MyActor->GetActorLocation()))
+				if (
+					(!bSphereOnlyTest &&(box.IsInside(elements[i].BoxSphereBounds.GetBox()) || sphere.IsInside(elements[i].MyActor->GetActorLocation()))) 
+					||
+					(bSphereOnlyTest && sphere.IsInside(elements[i].MyActor->GetActorLocation()))
+					)
 				{
 					octreeElements.Add(elements[i]);
 				}
@@ -150,10 +154,10 @@ TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphere
 	return octreeElements;
 }
 
-void ASpacePartioner::DrawBoxSphereBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bPersistentLines = false, const float lifeTime = 0.0f)
+void ASpacePartioner::DrawBoxSphereBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bSphereOnlyTest = false, const bool bPersistentLines = false, const float lifeTime = 0.0f)
 {
-	DrawDebugBox(GetWorld(), inBoundingBoxQuery.Origin, inBoundingBoxQuery.BoxExtent, FColor().Purple, bPersistentLines, lifeTime);
-	DrawDebugSphere(GetWorld(), inBoundingBoxQuery.Origin, inBoundingBoxQuery.SphereRadius, 12, FColor().Turquoise, bPersistentLines, lifeTime);
+	DrawDebugBox(GetWorld(), inBoundingBoxQuery.Origin, inBoundingBoxQuery.BoxExtent, (bSphereOnlyTest ? FColor(128.0f, 128.0f, 128.0f, 128.0f) : FColor().Purple), bPersistentLines, lifeTime);
+	DrawDebugSphere(GetWorld(), inBoundingBoxQuery.Origin, inBoundingBoxQuery.SphereRadius, 12, (bSphereOnlyTest ? FColor().Orange : FColor().Turquoise), bPersistentLines, lifeTime, 0, (bSphereOnlyTest ? 3.0f : 0.0f));
 }
 
 void ASpacePartioner::DrawOctreeBounds()

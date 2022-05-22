@@ -114,14 +114,14 @@ public:
 	* @return TArray of Elements
 	*/
 	UFUNCTION(BlueprintCallable, Category = Octree)
-	TArray<FOctreeElement> GetElementsWithinBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bDrawDebug, const bool bPersistentLines, const float lifeTime);
+	TArray<FOctreeElement> GetElementsWithinBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bSphereOnlyTest, const bool bDrawDebug, const bool bPersistentLines, const float lifeTime);
 	
 	/** Draws Debug information at runtime */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Debug)
 	bool bDrawDebugInfo;
 
 	UFUNCTION(BlueprintCallable, Category = Octree)
-	void DrawBoxSphereBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bPersistentLines, const float lifeTime);
+	void DrawBoxSphereBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bSphereOnlyTest, const bool bPersistentLines, const float lifeTime);
 
 private:
 
