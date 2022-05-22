@@ -111,7 +111,8 @@ TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphere
 	TArray<FOctreeElement> octreeElements;
 	FBox box = inBoundingBoxQuery.GetBox();
 	FSphere sphere = inBoundingBoxQuery.GetSphere();
-	
+	FBox sphereBox = FBox(FVector(sphere.Center.X - sphere.W, sphere.Center.Y - sphere.W, sphere.Center.Z - sphere.W),
+						  FVector(sphere.Center.X + sphere.W, sphere.Center.Y + sphere.W, sphere.Center.Z + sphere.W));
 	//--just for reference--
 	//OctreeData->FindAllElements([&octreeElements, &box, &sphere](const FOctreeElement& octElement)
 	//	{
@@ -122,9 +123,9 @@ TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphere
 	//	});
 	
 	OctreeData->FindNodesWithPredicate(
-		[&box](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex /*NodeIndex*/, const FBoxCenterAndExtent& NodeBounds)
+		[&box, &sphereBox](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex /*NodeIndex*/, const FBoxCenterAndExtent& NodeBounds)
 		{
-			if (NodeBounds.GetBox().IsInside(box.GetCenter()) || NodeBounds.GetBox().Intersect(box))
+			if (NodeBounds.GetBox().IsInside(box.GetCenter()) || NodeBounds.GetBox().Intersect(box) || NodeBounds.GetBox().Intersect(sphereBox))
 			{
 				return true;
 			}
