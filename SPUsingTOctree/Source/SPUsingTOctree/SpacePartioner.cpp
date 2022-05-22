@@ -49,20 +49,8 @@ void ASpacePartioner::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
-	//check(bInitialized);
-	//check(bDrawDebugInfo);
-
 	if (bInitialized && bDrawDebugInfo)
 	{
-		int level = 0;
-		float max = 0;
-		float offsetMax = 0;
-		float offset = 0;
-		FVector maxExtent = FVector(0, 0, 0);
-		FVector center = FVector(0, 0, 0);
-		FVector tempForCoercion = FVector(0, 0, 0);;
-		FBoxCenterAndExtent OldBounds = FBoxCenterAndExtent();
-
 		int nodeCount = 0;
 		int elementCount = 0;
 		
@@ -71,73 +59,12 @@ void ASpacePartioner::Tick( float DeltaTime )
 			{
 				return true;
 			},
-			[this, &tempForCoercion, &max, &center, &OldBounds, &level, &offsetMax, &offset, &maxExtent, &elementCount, &nodeCount](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& NodeBounds)
+			[this, &elementCount, &nodeCount](FSimpleOctree::FNodeIndex /*ParentNodeIndex*/, FSimpleOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& NodeBounds)
 			{
 				nodeCount++;
 
-				// If the extents have changed then we have moved a level.
-				if (!OldBounds.Extent.Equals(NodeBounds.Extent))
-				{
-					level++;
-				}
-				OldBounds = NodeBounds;
-				
-				//UE_LOG(LogTemp, Log, TEXT("Level: %d"), level);
-				
-				// Draw Node Bounds
-				tempForCoercion = NodeBounds.Extent;
-				max = tempForCoercion.GetMax();
-				center = NodeBounds.Center;
-
-				//UE_LOG(LogTemp, Log, TEXT("center before: %s"), *center.ToString());
-
-				// To understand the math here check out the constructors in FOctreeNodeContext
-				// Offset nodes that are not the root bounds
-				if (!OctreeData->GetRootBounds().Extent.Equals(NodeBounds.Extent))
-				{
-					for (int i = 1; i < level; i++)
-					{
-						// Calculate offset
-						offsetMax = max / (1.0f + (1.0f / FOctreeNodeContext::LoosenessDenominator));
-						offset = max - offsetMax;
-						max = offsetMax;
-
-						// Calculate Center Offset
-						if (center.X > 0)
-						{
-							center.X = center.X + offset;
-						}
-						else
-						{
-							center.X = center.X - offset;
-						}
-
-						if (center.Y > 0)
-						{
-							center.Y = center.Y + offset;
-						}
-						else
-						{
-							center.Y = center.Y - offset;
-						}
-
-						if (center.Z > 0)
-						{
-							center.Z = center.Z + offset;
-						}
-						else
-						{
-							center.Z = center.Z - offset;
-						}
-					}
-				}
-
-				//UE_LOG(LogTemp, Log, TEXT("max: %f"), max);
-				//UE_LOG(LogTemp, Log, TEXT("center of nodes: %s"), *center.ToString());
-
-				maxExtent = FVector(max, max, max);
-
-				//UE_LOG(LogTemp, Log, TEXT("Extent of nodes: %s"), *tempForCoercion.ToString());
+				FVector maxExtent = NodeBounds.Extent;
+				FVector center = NodeBounds.Center;
 
 				DrawDebugBox(GetWorld(), center, maxExtent, FColor().Blue, false, 0.0f);
 				DrawDebugSphere(GetWorld(), center + maxExtent, 4.0f, 12, FColor().Green, false, 0.0f);
@@ -148,17 +75,17 @@ void ASpacePartioner::Tick( float DeltaTime )
 				for(int i = 0; i < elements.Num(); i++)
 				{
 					// Draw debug boxes around elements
-					max = elements[i].BoxSphereBounds.BoxExtent.GetMax();
+					float max = elements[i].BoxSphereBounds.BoxExtent.GetMax();
 					maxExtent = FVector(max, max, max);
 					center = elements[i].MyActor->GetActorLocation();
 
-					DrawDebugBox(GetWorld(), center, maxExtent, FColor().Blue, false, 0.0f);
+					DrawDebugBox(GetWorld(), center, maxExtent, FColor().Yellow, false, 0.0f);
 					DrawDebugSphere(GetWorld(), center + maxExtent, 4.0f, 12, FColor().White, false, 0.0f);
 					DrawDebugSphere(GetWorld(), center - maxExtent, 4.0f, 12, FColor().White, false, 0.0f);
 					elementCount++;
 				}
 			});
-
+		
 		//UE_LOG(LogTemp, Log, TEXT("Node Count: %d, Element Count: %d"), nodeCount, elementCount);
 	}
 
@@ -172,24 +99,32 @@ void ASpacePartioner::AddOctreeElement(const FOctreeElement& inNewOctreeElement)
 	UE_LOG(LogTemp, Log, TEXT("Added element to Octree."));
 }
 
-TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphereBounds& inBoundingBoxQuery)
+TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bDrawDebug = false, const bool bPersistentLines = false, const float lifeTime = 0.0f)
 {
-	FBoxCenterAndExtent boundingBoxQuery = FBoxCenterAndExtent(inBoundingBoxQuery);
-	return GetElementsWithinBounds(boundingBoxQuery);
-}
-
-TArray<FOctreeElement> ASpacePartioner::GetElementsWithinBounds(const FBoxCenterAndExtent& inBoundingBoxQuery)
-{
-	// Iterating over a region in the octree and storing the elements
+	if (bDrawDebug)
+	{
+		DrawBoxSphereBounds(inBoundingBoxQuery, bPersistentLines, lifeTime);
+	}
 	TArray<FOctreeElement> octreeElements;
-
-	OctreeData->FindAllElements([&octreeElements](const FOctreeElement& octElement)
+	FBox box = inBoundingBoxQuery.GetBox();
+	FSphere sphere = inBoundingBoxQuery.GetSphere();
+	
+	OctreeData->FindAllElements([&octreeElements, &box, &sphere](const FOctreeElement& octElement)
 		{
-			octreeElements.Add(octElement);
+			if (box.IsInside(octElement.BoxSphereBounds.GetBox()) || sphere.IsInside(octElement.MyActor->GetActorLocation()))
+			{
+				octreeElements.Add(octElement);
+			}
 		});
 	UE_LOG(LogTemp, Log, TEXT("octreeElements: %d"), octreeElements.Num());
 
 	return octreeElements;
+}
+
+void ASpacePartioner::DrawBoxSphereBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bPersistentLines = false, const float lifeTime = 0.0f)
+{
+	DrawDebugBox(GetWorld(), inBoundingBoxQuery.Origin, inBoundingBoxQuery.BoxExtent, FColor().Purple, bPersistentLines, lifeTime);
+	DrawDebugSphere(GetWorld(), inBoundingBoxQuery.Origin, inBoundingBoxQuery.SphereRadius, 12, FColor().Turquoise, bPersistentLines, lifeTime);
 }
 
 void ASpacePartioner::DrawOctreeBounds()
@@ -200,7 +135,7 @@ void ASpacePartioner::DrawOctreeBounds()
 	FVector maxExtent = FVector(max, max, max);
 	FVector center = this->OctreeData->GetRootBounds().Center;
 
-	DrawDebugBox(GetWorld(), center, maxExtent, FColor().Blue, false, 0.0f);
+	DrawDebugBox(GetWorld(), center, maxExtent, FColor().Green, false, 0.0f);
 	DrawDebugSphere(GetWorld(), center + maxExtent, 4.0f, 12, FColor().White, false, 0.0f);
 	DrawDebugSphere(GetWorld(), center - maxExtent, 4.0f, 12, FColor().White, false, 0.0f);
 }
