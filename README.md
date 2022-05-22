@@ -1,6 +1,6 @@
-# UE_Space_Partioner_Using_TOctree
+# UE_Space_Partioner_Using_TOctree2
 ## Synopsis
-This is a simple space partitioning algorithm using the TOctree type. It is designed to be general enough to allow users to customize it to their liking. 
+This is a simple space partitioning algorithm using the TOctree2 type. It is designed to be general enough to allow users to customize it to their liking. 
 
 ## Motivation
 This project was created to give users an easy to access reference on how to use the TOctree type in their own Unreal Engine projects. We are using TOctree in this project for space partioning, but it can be used for a wide variety of purposes.
