@@ -22,6 +22,12 @@ struct FOctreeElement
 	{
 		BoxSphereBounds = FBoxSphereBounds(FVector(0.0f, 0.0f, 0.0f), FVector(1.0f, 1.0f, 1.0f), 1.0f);
 	}
+
+	FOctreeElement(AActor* inActor, FBoxSphereBounds inBoxSphereBounds)
+	{
+		MyActor = inActor;
+		BoxSphereBounds = inBoxSphereBounds;
+	}
 };
 
 struct FOctreeSematics
@@ -122,6 +128,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = Octree)
 	void DrawBoxSphereBounds(const FBoxSphereBounds& inBoundingBoxQuery, const bool bSphereOnlyTest, const bool bPersistentLines, const float lifeTime);
+
+	UFUNCTION(BlueprintCallable, Category = Octree)
+	void GetAllActorsWithinBounds(const FBoxSphereBounds& inBoundingBoxQuery, TSubclassOf<AActor> ActorClass, TArray<AActor*>& OutActors, const bool bSphereOnlyTest, const bool bDrawDebug, const bool bPersistentLines, const float lifeTime);
+
+	UFUNCTION(BlueprintCallable, Category = Octree)
+	void AddActorToOctree(AActor* inActor);
 
 private:
 
