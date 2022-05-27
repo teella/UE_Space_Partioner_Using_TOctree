@@ -101,9 +101,6 @@ public:
 	*/
 	void Initialize(const float& inExtent, const bool& inDrawDebugInfo);
 
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
 	// Called every frame
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -134,6 +131,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = Octree)
 	void AddActorToOctree(AActor* inActor);
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 
