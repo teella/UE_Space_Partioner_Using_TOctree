@@ -237,3 +237,5 @@ DerivedDataCache/
 Saved/
 Content/StarterContent/
 Packaged/
+Plugins/**/Intermediate/**
+Plugins/**/Binaries/**
