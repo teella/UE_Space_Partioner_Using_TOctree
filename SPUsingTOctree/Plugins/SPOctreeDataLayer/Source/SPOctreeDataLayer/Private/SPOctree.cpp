@@ -114,7 +114,7 @@ TArray<FSPOctreeElement> ASPOctree::GetElementsWithinBounds(const FBoxSphereBoun
 		DrawBoxSphereBounds(inBoundingBoxQuery, bSphereOnlyTest, bPersistentLines, lifeTime);
 	}
 	TArray<FSPOctreeElement> octreeElements;
-	TQueue<FSPOctreeElement> octElements;
+	octreeElements.Reset();
 	FBox box = inBoundingBoxQuery.GetBox();
 	FSphere sphere = inBoundingBoxQuery.GetSphere();
 	FBox sphereBox = FBox(FVector(sphere.Center.X - sphere.W, sphere.Center.Y - sphere.W, sphere.Center.Z - sphere.W),
@@ -129,31 +129,22 @@ TArray<FSPOctreeElement> ASPOctree::GetElementsWithinBounds(const FBoxSphereBoun
 			}
 			return false;
 		},
-		[this, &octreeElements, &box, &sphere, &bSphereOnlyTest, &octElements](FSPOctree::FNodeIndex /*ParentNodeIndex*/, FSPOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& /*NodeBounds*/)
+		[this, &octreeElements, &box, &sphere, &bSphereOnlyTest](FSPOctree::FNodeIndex /*ParentNodeIndex*/, FSPOctree::FNodeIndex NodeIndex, const FBoxCenterAndExtent& /*NodeBounds*/)
 		{
 			TArrayView<const FSPOctreeElement> elements = OctreeData->GetElementsForNode(NodeIndex);
 			int numElements = elements.Num();
 			if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("GetElementsWithinBounds NodeIndex: %d numElements: %i"), NodeIndex, numElements);
 
-			ParallelFor(numElements, [this, box, sphere, bSphereOnlyTest, elements, &octElements](int32 Index)
-				{
-					if (
-						(!bSphereOnlyTest && (box.IsInside(elements[Index].BoxSphereBounds.GetBox()) || box.Intersect(elements[Index].BoxSphereBounds.GetBox()) || sphere.IsInside(elements[Index].MyActor->GetActorLocation())))
-						||
-						(bSphereOnlyTest && sphere.IsInside(elements[Index].MyActor->GetActorLocation()))
-						)
-					{
-						octElements.Enqueue(elements[Index]);
-						if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("GetElementsWithinBounds elements[%i].MyActor: %s"), Index, *(elements[Index].MyActor->GetName()));
-					}
-				});
-
-			if (!octElements.IsEmpty())
+			for (int Index = 0; Index < numElements; Index++)
 			{
-				FSPOctreeElement element;
-				while (octElements.Dequeue(element))
+				if (
+					(!bSphereOnlyTest && (box.IsInside(elements[Index].BoxSphereBounds.GetBox()) || box.Intersect(elements[Index].BoxSphereBounds.GetBox()) || sphere.IsInside(elements[Index].MyActor->GetActorLocation())))
+					||
+					(bSphereOnlyTest && sphere.IsInside(elements[Index].MyActor->GetActorLocation()))
+					)
 				{
-					octreeElements.Add(element);
+					octreeElements.Add(elements[Index]);
+					if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("GetElementsWithinBounds elements[%i].MyActor: %s"), Index, *(elements[Index].MyActor->GetActorNameOrLabel()));
 				}
 			}
 		});
@@ -180,36 +171,27 @@ void ASPOctree::GetAllActorsWithinBounds(const FBoxSphereBounds& inBoundingBoxQu
 
 	FBox box = inBoundingBoxQuery.GetBox();
 	FSphere sphere = inBoundingBoxQuery.GetSphere();
-	FBox sphereBox = FBox(FVector(sphere.Center.X - sphere.W, sphere.Center.Y - sphere.W, sphere.Center.Z - sphere.W),
-		FVector(sphere.Center.X + sphere.W, sphere.Center.Y + sphere.W, sphere.Center.Z + sphere.W));
-	TQueue<AActor*> actorsQueue;
 	TArray<AActor*> foundActors;
+	foundActors.Reset();
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ActorClass, foundActors);
 
 	int numActors = foundActors.Num();
 	if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("GetAllActorsWithinBounds numActors: %d"), numActors);
 
-	ParallelFor(numActors, [this, box, sphere, bSphereOnlyTest, foundActors, &actorsQueue](int32 Index)
-		{
-			FBox actorBounds = foundActors[Index]->GetComponentsBoundingBox(true, true);
-			if (
-				(!bSphereOnlyTest && (box.IsInside(actorBounds) || box.Intersect(actorBounds) || sphere.IsInside(foundActors[Index]->GetActorLocation())))
-				||
-				(bSphereOnlyTest && sphere.IsInside(foundActors[Index]->GetActorLocation()))
-				)
-			{
-				actorsQueue.Enqueue(foundActors[Index]);
-			}
-		});
-
-	//foundActors.RemoveAll([](AActor * actor) { return true; });
-
-	if (!actorsQueue.IsEmpty())
+	for (int Index = 0; Index < numActors; Index++)
 	{
-		AActor* actor;
-		while (actorsQueue.Dequeue(actor))
+		FBox actorBounds = foundActors[Index]->GetComponentsBoundingBox(true, true);
+		if (
+			(!bSphereOnlyTest && (box.IsInside(actorBounds) || box.Intersect(actorBounds) || sphere.IsInside(foundActors[Index]->GetActorLocation())))
+			||
+			(bSphereOnlyTest && sphere.IsInside(foundActors[Index]->GetActorLocation()))
+			)
 		{
-			OutActors.Add(actor);
+			OutActors.Add(foundActors[Index]);
+		}
+		else
+		{
+			if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("GetAllActorsWithinBounds: foundActors[%i]: %s NOT in bounds."), Index, *(foundActors[Index]->GetActorNameOrLabel()));
 		}
 	}
 
@@ -230,7 +212,7 @@ void ASPOctree::AddActorToOctree(AActor* inActor)
 			FSPOctreeElement element = FSPOctreeElement(inActor, FBoxSphereBounds(origin, boxExtent, maxExtent));
 			check(bInitialized);
 			OctreeData->AddElement(element);
-			if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("AddActorToOctree: [%s] to Octree."), *(inActor->GetName()));
+			if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("AddActorToOctree: [%s] to Octree."), *(inActor->GetActorNameOrLabel()));
 		}
 		else
 		{
