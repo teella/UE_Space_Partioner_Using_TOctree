@@ -100,10 +100,12 @@ void ASPOctree::Tick(float DeltaTime)
 
 }
 
-void ASPOctree::AddOctreeElement(const FSPOctreeElement& inNewOctreeElement)
+void ASPOctree::AddOctreeElement(const FSPOctreeElement& inNewOctreeElement, const bool inHiddenInGame)
 {
 	check(bInitialized);
 	OctreeData->AddElement(inNewOctreeElement);
+	inNewOctreeElement.MyActor->SetActorHiddenInGame(inHiddenInGame);
+	inNewOctreeElement.MyActor->SetActorEnableCollision(!inHiddenInGame);
 	if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("Added element [%s] to Octree."), *(inNewOctreeElement.MyActor->GetName()));
 }
 
@@ -198,7 +200,7 @@ void ASPOctree::GetAllActorsWithinBounds(const FBoxSphereBounds& inBoundingBoxQu
 	if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("GetAllActorsWithinBounds OutActors: %d"), OutActors.Num());
 }
 
-void ASPOctree::AddActorToOctree(AActor* inActor)
+void ASPOctree::AddActorToOctree(AActor* inActor, const bool inHiddenInGame)
 {
 	if (inActor)
 	{
@@ -209,8 +211,10 @@ void ASPOctree::AddActorToOctree(AActor* inActor)
 
 		if (maxExtent < OctreeData->GetRootBounds().GetBox().GetExtent().GetMax())
 		{
-			FSPOctreeElement element = FSPOctreeElement(inActor, FBoxSphereBounds(origin, boxExtent, maxExtent));
 			check(bInitialized);
+			FSPOctreeElement element = FSPOctreeElement(inActor, FBoxSphereBounds(origin, boxExtent, maxExtent));
+			inActor->SetActorHiddenInGame(inHiddenInGame);
+			inActor->SetActorEnableCollision(!inHiddenInGame);
 			OctreeData->AddElement(element);
 			if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("AddActorToOctree: [%s] to Octree."), *(inActor->GetActorNameOrLabel()));
 		}
@@ -220,6 +224,19 @@ void ASPOctree::AddActorToOctree(AActor* inActor)
 			if (PrintLogs) UE_LOG(SPOctreeDataLayerMod, Log, TEXT("AddActorToOctree: maxExtent greater than OctreeData->GetRootBounds maxExtent!"));
 		}
 	}
+}
+
+void ASPOctree::GetAllActors(TArray<AActor*>& OutActors)
+{
+	OutActors.Reset();
+
+	OctreeData->FindAllElements([&OutActors](const FSPOctreeElement& octElement)
+		{
+			if (octElement.MyActor)
+			{
+				OutActors.Add(octElement.MyActor);
+			}
+		});
 }
 
 void ASPOctree::DrawOctreeBounds()

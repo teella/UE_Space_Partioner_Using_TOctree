@@ -28,6 +28,11 @@ struct FSPOctreeElement
 		MyActor = inActor;
 		BoxSphereBounds = inBoxSphereBounds;
 	}
+
+	bool operator==(const FSPOctreeElement& OtherElement) const
+	{
+		return (MyActor == OtherElement.MyActor);
+	}
 };
 
 struct FSPOctreeSematics
@@ -109,7 +114,7 @@ public:
 	* @param NewOctreeElement	FSPOctreeElement to be added.
 	*/
 	UFUNCTION(BlueprintCallable, Category = Octree)
-	void AddOctreeElement(const FSPOctreeElement& inNewOctreeElement);
+	void AddOctreeElement(const FSPOctreeElement& inNewOctreeElement, const bool inHiddenInGame);
 
 	/**
 	* Returns elements within the specified region.
@@ -130,7 +135,11 @@ public:
 	void GetAllActorsWithinBounds(const FBoxSphereBounds& inBoundingBoxQuery, TSubclassOf<AActor> ActorClass, TArray<AActor*>& OutActors, const bool bSphereOnlyTest, const bool bDrawDebug, const bool bPersistentLines, const float lifeTime);
 
 	UFUNCTION(BlueprintCallable, Category = Octree)
-	void AddActorToOctree(AActor* inActor);
+	void AddActorToOctree(AActor* inActor, const bool inHiddenInGame);
+
+	UFUNCTION(BlueprintCallable, Category = Octree)
+	void GetAllActors(TArray<AActor*>& OutActors);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
